@@ -35,9 +35,13 @@ def remove_leading_whitespace(query, tokens):
 
 def remove_word(query, tokens):
     word = collect_characters(query,
-                              string.ascii_letters + "_" + string.digits)
+                              string.ascii_letters + "_" + string.digits + ".")
     if word == "NULL":
         tokens.append(None)
+    elif "." in word:
+        tokens.append(float(word))
+    elif word.isdigit():
+        tokens.append(int(word))
     else:
         tokens.append(word)
     return query[len(word):]
@@ -51,7 +55,6 @@ def remove_text(query, tokens):
     tokens.append(text)
     query = query[end_quote_index + 1:]
     return query
-
 
 def tokenize(query):
     tokens = []
@@ -78,6 +81,11 @@ def tokenize(query):
             continue
 
         #todo integers, floats, misc. query stuff (select * for example)
+        if query[0] in (string.digits):
+            query = remove_word(query, tokens)
+
+
+            continue
 
         if len(query) == len(old_query):
             raise AssertionError("Query didn't get shorter.")
@@ -85,5 +93,5 @@ def tokenize(query):
     return tokens
 
 tokens = tokenize(query)
-print(tokens)
-print(correct_tokens)
+print("My toks:", tokens)
+print("Correct:", correct_tokens)
