@@ -10,6 +10,8 @@ Sources:
 """
 import string
 
+import setuptools
+
 _ALL_DATABASES = {}
 
 correct_tokens = [
@@ -43,7 +45,6 @@ class Connection(object):
         Returns a list of tuples (empty unless select statement
         with rows to return).
         """
-        table = [()]
 
         def collect_characters(query, allowed_characters):
             letters = []
@@ -103,7 +104,7 @@ class Connection(object):
                     query = remove_text(query, tokens)
                     continue
 
-                # todo integers, floats, misc. query stuff (select * for example)
+                # xtodo integers, floats, misc. query stuff (select * for example)
                 if query[0] in (string.digits):
                     query = remove_word(query, tokens)
                     continue
@@ -117,17 +118,27 @@ class Connection(object):
             return tokens
 
         tokens = tokenize(statement)
-        if tokens[0] == "CREATE":       # CREATING A DB
-            db = Database()             # Instantiate DB
+
+        if tokens[0] == "CREATE":
+            db = Database()  # Instantiate DB
+            _ALL_DATABASES[1] = db      # CREATING A DB
             tbl = Table(tokens[2])      # Create a table with name (tokens[2] should always be name)
-            db.add_table(tbl)           # Add table to DB
             data = []                   # Retreive data from query
-            for i in range(4, tokens.index(')')):       # Should add a row to table, or column (still deciding)
+            for i in range(4, tokens.index(')')):       # Should add a row to table
                 if tokens[i] == ',':
                     continue
                 data.append(tokens[i])
+            tbl.set_types(data)
+            db.add_table(tbl)  # Add table to DB
 
-
+        if tokens[0] == "INSERT":
+            tbl = _ALL_DATABASES[1].get_table(tokens[2])  # ??? Maybe? Would create a new table after every insert is called
+            data = []
+            for i in range(5, tokens.index(')')):
+                if tokens[i] == ',':
+                    continue
+                data.append(tokens[i])
+            tbl.add_row(data)
 
         print("My toks:" ,tokens)
 
@@ -155,21 +166,50 @@ class Database(object): #Only need 1 database for project 1 so far.
     def add_table(self, tbl):
         self.tables.append(tbl)
 
+    def get_table(self, name):
+        for tbl in self.tables:
+            if name == tbl.name:
+                return tbl
 
 class Table(object):
     def __init__(self, name):
         self.name = name
-        self.rows = [Row]
+        self.types = []
+        self.rows = []
+        self.colnames = []
 
+    def set_types(self, data):
+        for elem in data:
+            if elem == "INTEGER" or elem == "TEXT" or elem == "REAL": # Store table types, in order with a list
+                self.types.append(elem)
+            else:
+                self.colnames.append(elem)  # Also store column names
+
+    def add_row(self, data):            # Should be called during INSERT
+        lst = []
+        for i in range(len(data)):          #Conversions of data eg ('James', 29, 3.5)
+            if self.types[i] == "INTEGER":
+                lst.append(int(data[i]))
+            if self.types[i] == "TEXT":
+                lst.append(str(data[i]))
+            if self.types[i] == "REAL":
+                lst.append(float(data[i]))
+        row = Row(lst)
+        self.rows.append(row)
 
 class Row(object):
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         self.data = ()
 
-#query = " INSERT   INTO instructors VALUES('James', 29, 17.5, NULL);"
+    def __init__(self, lst):
+        self.data = tuple(lst)
+
 query = "CREATE TABLE students (col1 INTEGER, col2 TEXT, col3 REAL);"
+
+
 conn = Connection("test.db")
 conn.execute(query)
 
+query = " INSERT   INTO students VALUES('James', 29, 17.5, NULL);"
+conn.execute(query)
 print("Correct:" ,correct_tokens)
