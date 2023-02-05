@@ -31,6 +31,56 @@ correct_tokens = [
     ";"
 ]
 
+class Database(object): #Only need 1 database for project 1 so far.
+    def __init__(self):
+        """
+        """
+        self.tables = []
+        self.name = ""
+
+    def add_table(self, tbl):
+        self.tables.append(tbl)
+
+    def get_table(self, name):
+        for tbl in self.tables:
+            if name == tbl.name:
+                return tbl
+
+class Table(object):
+    def __init__(self, name):
+        self.name = name
+        self.types = []
+        self.rows = []
+        self.colnames = []
+
+    def set_types(self, data):
+        for elem in data:
+            if elem == "INTEGER" or elem == "TEXT" or elem == "REAL": # Store table types, in order with a list
+                self.types.append(elem)
+            else:
+                self.colnames.append(elem)  # Also store column names
+
+    def add_row(self, data):            # Should be called during INSERT
+        lst = []
+        for i in range(len(data)):          #Conversions of data eg ('James', 29, 3.5)
+            if self.types[i] == "INTEGER":
+                lst.append(int(data[i]))
+            if self.types[i] == "TEXT":
+                lst.append(str(data[i]))
+            if self.types[i] == "REAL":
+                lst.append(float(data[i]))
+        row = Row(lst)
+        self.rows.append(row)
+
+class Row(object):
+    def __init__(self):
+        self.data = ()
+
+    def __init__(self, lst):
+        self.data = tuple(lst)
+
+db = Database()
+
 class Connection(object):
     def __init__(self, filename):
         """
@@ -120,8 +170,8 @@ class Connection(object):
         tokens = tokenize(statement)
 
         if tokens[0] == "CREATE":
-            db = Database()  # Instantiate DB
-            _ALL_DATABASES[1] = db      # CREATING A DB
+            #db = Database()  # Instantiate DB
+            #_ALL_DATABASES[1] = db      # CREATING A DB
             tbl = Table(tokens[2])      # Create a table with name (tokens[2] should always be name)
             data = []                   # Retreive data from query
             for i in range(4, tokens.index(')')):       # Should add a row to table
@@ -132,14 +182,13 @@ class Connection(object):
             db.add_table(tbl)  # Add table to DB
 
         if tokens[0] == "INSERT":
-            tbl = _ALL_DATABASES[1].get_table(tokens[2])  # ??? Maybe? Would create a new table after every insert is called
+            tbl = db.get_table(tokens[2])  # ??? Maybe? Would create a new table after every insert is called
             data = []
             for i in range(5, tokens.index(')')):
                 if tokens[i] == ',':
                     continue
                 data.append(tokens[i])
             tbl.add_row(data)
-        #I hate git
         print("My toks:" ,tokens)
 
     def close(self):
@@ -156,53 +205,7 @@ def connect(filename):
     return Connection(filename)
 
 
-class Database(object): #Only need 1 database for project 1 so far.
-    def __init__(self):
-        """
-        """
-        self.tables = []
-        self.name = ""
 
-    def add_table(self, tbl):
-        self.tables.append(tbl)
-
-    def get_table(self, name):
-        for tbl in self.tables:
-            if name == tbl.name:
-                return tbl
-
-class Table(object):
-    def __init__(self, name):
-        self.name = name
-        self.types = []
-        self.rows = []
-        self.colnames = []
-
-    def set_types(self, data):
-        for elem in data:
-            if elem == "INTEGER" or elem == "TEXT" or elem == "REAL": # Store table types, in order with a list
-                self.types.append(elem)
-            else:
-                self.colnames.append(elem)  # Also store column names
-
-    def add_row(self, data):            # Should be called during INSERT
-        lst = []
-        for i in range(len(data)):          #Conversions of data eg ('James', 29, 3.5)
-            if self.types[i] == "INTEGER":
-                lst.append(int(data[i]))
-            if self.types[i] == "TEXT":
-                lst.append(str(data[i]))
-            if self.types[i] == "REAL":
-                lst.append(float(data[i]))
-        row = Row(lst)
-        self.rows.append(row)
-
-class Row(object):
-    def __init__(self):
-        self.data = ()
-
-    def __init__(self, lst):
-        self.data = tuple(lst)
 
 query = "CREATE TABLE students (col1 INTEGER, col2 TEXT, col3 REAL);"
 
@@ -210,6 +213,12 @@ query = "CREATE TABLE students (col1 INTEGER, col2 TEXT, col3 REAL);"
 conn = Connection("test.db")
 conn.execute(query)
 
-query = " INSERT   INTO students VALUES('James', 29, 17.5, NULL);"
+query = " INSERT   INTO students VALUES(18, 'James', 17.5);"
+
 conn.execute(query)
+query = " CREATE   TABLE liv (marry TEXT, me TEXT, please TEXT);"
+conn.execute(query)
+query = " INSERT   INTO liv VALUES('I', 'Love', 'You');"
+conn.execute(query)
+
 print("Correct:" ,correct_tokens)
