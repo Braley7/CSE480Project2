@@ -139,7 +139,7 @@ class Connection(object):
                     continue
                 data.append(tokens[i])
             tbl.add_row(data)
-
+        #I hate git
         print("My toks:" ,tokens)
 
     def close(self):
