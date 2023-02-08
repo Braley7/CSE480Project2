@@ -63,6 +63,9 @@ class Table(object):
     def add_row(self, data):            # Should be called during INSERT
         lst = []
         for i in range(len(data)):          #Conversions of data eg ('James', 29, 3.5)
+            if data[i] is None:
+                lst.append(None)
+                continue
             if self.types[i] == "INTEGER":
                 lst.append(int(data[i]))
             if self.types[i] == "TEXT":
@@ -72,12 +75,26 @@ class Table(object):
         row = Row(lst)
         self.rows.append(row)
 
+    def get_rows(self, keys):
+        lst = []
+        for row in self.rows:
+
+
+
+        #
+        print(lst)
 class Row(object):
     def __init__(self):
         self.data = ()
 
     def __init__(self, lst):
         self.data = tuple(lst)
+
+    def __repr__(self):
+        s = ''
+        for i in range(len(self.data)):
+            s += self.data[i] + " "
+        return s
 
 db = Database()
 
@@ -133,8 +150,8 @@ class Connection(object):
         def tokenize(query):
             tokens = []
             while query:
-                print("Query:{}".format(query))
-                print("Tokens: ", tokens)
+                #print("Query:{}".format(query))
+                #print("Tokens: ", tokens)
                 old_query = query
 
                 if query[0] in string.whitespace:
@@ -160,6 +177,8 @@ class Connection(object):
                     continue
 
                 if query[0] == "*":
+                    tokens.append(query[0])
+                    query = query[1:]
                     continue
 
                 if len(query) == len(old_query):
@@ -189,7 +208,37 @@ class Connection(object):
                     continue
                 data.append(tokens[i])
             tbl.add_row(data)
-        print("My toks:" ,tokens)
+
+        if tokens[0] == "SELECT":
+            lst = []
+            if tokens[1] == "*":
+                tbl = db.get_table(tokens[3])
+                for row in tbl.rows:
+                    lst.append(row.data)
+            else:
+                cols = []
+                tbl = db.get_table(tokens[tokens.index("FROM") + 1])
+                for i in range(1, tokens.index("FROM")):
+                    if tokens[i] == ',':
+                        continue
+                    cols.append(tokens[i])
+
+                tbl.get_rows(cols)
+                tmp = []
+                # for i in range(len(cols)):
+                #     for x in range(len(tbl.colnames)):
+                #         if cols[i] == tbl.colnames[x]:
+                #             for row in tbl.rows:
+                #                 tmp.append(row.data[x])
+
+
+
+
+
+            return lst
+
+
+        return []
 
     def close(self):
         """
@@ -205,20 +254,15 @@ def connect(filename):
     return Connection(filename)
 
 
-
-
-query = "CREATE TABLE students (col1 INTEGER, col2 TEXT, col3 REAL);"
-
-
 conn = Connection("test.db")
+query = "CREATE TABLE student (name TEXT, grade REAL);"
 conn.execute(query)
-
-query = " INSERT   INTO students VALUES(18, 'James', 17.5);"
-
+query = "INSERT INTO student VALUES ('James', 1.5);"
 conn.execute(query)
-query = " CREATE   TABLE liv (marry TEXT, me TEXT, please TEXT);"
+query = "INSERT INTO student VALUES ('Yaxin', 4.0);"
 conn.execute(query)
-query = " INSERT   INTO liv VALUES('I', 'Love', 'You');"
+query = "INSERT INTO student VALUES ('Li', 3.2);"
 conn.execute(query)
-
-print("Correct:" ,correct_tokens)
+query = "SELECT grade, name FROM student ORDER BY name;"
+conn.execute(query)
+print("Completed")
