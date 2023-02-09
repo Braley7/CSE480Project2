@@ -76,13 +76,21 @@ class Table(object):
         self.rows.append(row)
 
     def get_rows(self, keys):
+        indexes = []
+
+        for key in keys:
+            for i in range(len(self.colnames)):     # Gather the indexes in colnames that match key (ordered)
+                if key == self.colnames[i]:
+                    indexes.append(i)
+
         lst = []
-        for row in self.rows:
+        for row in self.rows:                       # Add data from row in indexes and convert to tuple
+            tmp = []
+            for i in range(len(indexes)):
+                tmp.append(row.data[indexes[i]])
+            lst.append(tuple(tmp))
+        return lst
 
-
-
-        #
-        print(lst)
 class Row(object):
     def __init__(self):
         self.data = ()
@@ -217,27 +225,23 @@ class Connection(object):
                     lst.append(row.data)
             else:
                 cols = []
-                tbl = db.get_table(tokens[tokens.index("FROM") + 1])
-                for i in range(1, tokens.index("FROM")):
+                tbl = db.get_table(tokens[tokens.index("FROM") + 1])       # Multiple select
+                for i in range(1, tokens.index("FROM")):                    # Grab table, select columns
                     if tokens[i] == ',':
                         continue
                     cols.append(tokens[i])
 
-                tbl.get_rows(cols)
-                tmp = []
-                # for i in range(len(cols)):
-                #     for x in range(len(tbl.colnames)):
-                #         if cols[i] == tbl.colnames[x]:
-                #             for row in tbl.rows:
-                #                 tmp.append(row.data[x])
+                lst = tbl.get_rows(cols)
 
-
-
+            if "ORDER" in tokens:
+                ordering = tokens[tokens.index("BY") + 1 : None]
+                for elem in ordering:
+                    if elem == ',' or elem == ';':      #Grab ordering elements, remove commas and semicolon
+                        ordering.remove(elem)
+                print(ordering)
 
 
             return lst
-
-
         return []
 
     def close(self):
@@ -255,14 +259,14 @@ def connect(filename):
 
 
 conn = Connection("test.db")
-query = "CREATE TABLE student (name TEXT, grade REAL);"
+query = "CREATE TABLE student (name TEXT, grade REAL, color TEXT);;"
 conn.execute(query)
-query = "INSERT INTO student VALUES ('James', 1.5);"
+query = "INSERT INTO student VALUES ('James', 1.5, 'Blue');"
 conn.execute(query)
-query = "INSERT INTO student VALUES ('Yaxin', 4.0);"
+query = "INSERT INTO student VALUES ('Yaxin', 4.0, 'Yellow');"
 conn.execute(query)
-query = "INSERT INTO student VALUES ('Li', 3.2);"
+query = "INSERT INTO student VALUES ('Li', 3.2, 'Red');"
 conn.execute(query)
-query = "SELECT grade, name FROM student ORDER BY name;"
+query = "SELECT name, color FROM student ORDER BY grade;"
 conn.execute(query)
 print("Completed")
