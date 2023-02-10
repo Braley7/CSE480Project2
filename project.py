@@ -1,6 +1,6 @@
 """
 Name: Chris Braley
-Netid:braleych
+Netid: braleych
 PID: A60088768
 How long did this project take you?
 12 hours
