@@ -3,33 +3,17 @@ Name: Chris Braley
 Netid:braleych
 PID: A60088768
 How long did this project take you?
-
+12 hours
 
 Sources:
-
+https://www.pythontutorial.net/python-basics/python-unpack-list/
+https://stackoverflow.com/questions/18595686/how-do-operator-itemgetter-and-sort-work
 """
 import string
-
+import operator
 import setuptools
 
 _ALL_DATABASES = {}
-
-correct_tokens = [
-    "INSERT",
-    "INTO",
-    "instructors",
-    "VALUES",
-    "(",
-    "James",
-    ",",
-    29,
-    ",",
-    17.5,
-    ",",
-    None,
-    ")",
-    ";"
-]
 
 class Database(object): #Only need 1 database for project 1 so far.
     def __init__(self):
@@ -41,7 +25,7 @@ class Database(object): #Only need 1 database for project 1 so far.
     def add_table(self, tbl):
         self.tables.append(tbl)
 
-    def get_table(self, name):
+    def get_table(self, name):      # Return tables with matching names
         for tbl in self.tables:
             if name == tbl.name:
                 return tbl
@@ -75,7 +59,7 @@ class Table(object):
         row = Row(lst)
         self.rows.append(row)
 
-    def get_rows(self, keys):
+    def get_rows(self, keys, mylist):
         indexes = []
 
         for key in keys:
@@ -84,11 +68,29 @@ class Table(object):
                     indexes.append(i)
 
         lst = []
-        for row in self.rows:                       # Add data from row in indexes and convert to tuple
+        for row in mylist:
             tmp = []
             for i in range(len(indexes)):
-                tmp.append(row.data[indexes[i]])
+                tmp.append(row[indexes[i]])
             lst.append(tuple(tmp))
+
+        return lst
+
+    def sql_sort(self, keys):
+        indexes = []
+
+        for key in keys:
+            for i in range(len(self.colnames)):  # Gather the indexes in colnames that match key (ordered)
+                if key == self.colnames[i]:
+                    indexes.append(i)
+
+        lst = []
+        for row in self.rows:
+            lst.append(list(row.data))  # Convert tuples in tbl.row to list, and then sort by multiple keys w itemgetter
+
+        lst.sort(key=operator.itemgetter(*indexes))     #
+
+        lst = [tuple(x) for x in lst]
         return lst
 
 class Row(object):
@@ -158,8 +160,6 @@ class Connection(object):
         def tokenize(query):
             tokens = []
             while query:
-                #print("Query:{}".format(query))
-                #print("Tokens: ", tokens)
                 old_query = query
 
                 if query[0] in string.whitespace:
@@ -197,8 +197,6 @@ class Connection(object):
         tokens = tokenize(statement)
 
         if tokens[0] == "CREATE":
-            #db = Database()  # Instantiate DB
-            #_ALL_DATABASES[1] = db      # CREATING A DB
             tbl = Table(tokens[2])      # Create a table with name (tokens[2] should always be name)
             data = []                   # Retreive data from query
             for i in range(4, tokens.index(')')):       # Should add a row to table
@@ -218,28 +216,25 @@ class Connection(object):
             tbl.add_row(data)
 
         if tokens[0] == "SELECT":
-            lst = []
+            ordering = tokens[tokens.index("BY") + 1: None]  ## ORDER BY
+            for elem in ordering:
+                if elem == ',' or elem == ';':  # Grab ordering elements, remove commas and semicolon
+                    ordering.remove(elem)
+
             if tokens[1] == "*":
                 tbl = db.get_table(tokens[3])
-                for row in tbl.rows:
-                    lst.append(row.data)
+                lst = tbl.sql_sort(ordering)
             else:
-                cols = []
                 tbl = db.get_table(tokens[tokens.index("FROM") + 1])       # Multiple select
+                lst = tbl.sql_sort(ordering)
+
+                cols = []
                 for i in range(1, tokens.index("FROM")):                    # Grab table, select columns
                     if tokens[i] == ',':
                         continue
                     cols.append(tokens[i])
 
-                lst = tbl.get_rows(cols)
-
-            if "ORDER" in tokens:
-                ordering = tokens[tokens.index("BY") + 1 : None]
-                for elem in ordering:
-                    if elem == ',' or elem == ';':      #Grab ordering elements, remove commas and semicolon
-                        ordering.remove(elem)
-                print(ordering)
-
+                lst = tbl.get_rows(cols, lst)
 
             return lst
         return []
@@ -250,23 +245,8 @@ class Connection(object):
         """
         pass
 
-
 def connect(filename):
     """
     Creates a Connection object with the given filename
     """
     return Connection(filename)
-
-
-conn = Connection("test.db")
-query = "CREATE TABLE student (name TEXT, grade REAL, color TEXT);;"
-conn.execute(query)
-query = "INSERT INTO student VALUES ('James', 1.5, 'Blue');"
-conn.execute(query)
-query = "INSERT INTO student VALUES ('Yaxin', 4.0, 'Yellow');"
-conn.execute(query)
-query = "INSERT INTO student VALUES ('Li', 3.2, 'Red');"
-conn.execute(query)
-query = "SELECT name, color FROM student ORDER BY grade;"
-conn.execute(query)
-print("Completed")
